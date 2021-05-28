@@ -4,9 +4,6 @@
 #include <fcntl.h>
 
 int main(int argc, char *argv[]) {
-    struct flock lock;
-    char command[100];
-
     if (argc < 2) {
         printf("Usage: %s filename \n", argv[0]);
         return -1;
@@ -18,6 +15,8 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    struct flock lock;
+
     lock.l_type = F_WRLCK;
     lock.l_whence = SEEK_SET;
     lock.l_start = 0;
@@ -28,6 +27,8 @@ int main(int argc, char *argv[]) {
         close(file);
         return -1;
     }
+
+    char command[100];
     snprintf(command, 100, "mcedit %s\n", argv[1]);
 
     int status = system(command);

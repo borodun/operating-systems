@@ -58,6 +58,7 @@ int main(int argc, char *argv[]) {
                 break;
             }
         }
+
         char c;
         int ret = read(tty, &c, 1);
         if (ret > 0) {

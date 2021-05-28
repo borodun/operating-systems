@@ -1,24 +1,28 @@
 #include <stdio.h>
-#include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/resource.h>
-#include <ctype.h>
 #include <signal.h>
+#include <fcntl.h>
 
-#define TIME_OUT 1
+int alarmed = 0;
+int fds[2];
 
-int alarmBeeped = 0;
-FILE **fd;
+void SIGHandler(int signum) {
+    if (signum == SIGINT) {
+        write(fds[1], "int", 3);
+    } else {
+        alarmed = 1;
+    }
+}
 
-int openFiles(int fileCount, char **files) {
+int openFiles(int fileCount, char *argv[], FILE *fd[]) {
     int openedFiles = 0;
     for (int i = 1; i < fileCount; i++) {
-        printf("opening %s\n", files[openedFiles + 1]);
+        printf("Opening %s\n", argv[i]);
 
-        if ((fd[openedFiles + 1] = fopen(files[openedFiles + 1], "rb")) == NULL) {
-            printf("Cannot open %s\n", files[openedFiles + 1]);
+        if ((fd[openedFiles] = fopen(argv[i], "r")) == NULL) {
+            printf("Cannot open %s\n", argv[i]);
             continue;
         } else {
             openedFiles++;
@@ -27,42 +31,50 @@ int openFiles(int fileCount, char **files) {
     return openedFiles;
 }
 
-void SIGALRMHandler(int sig) {
-    alarmBeeped = 1;
-}
+void readFiles(int fileCount, FILE *fd[]) {
+    signal(SIGALRM, SIGHandler);
+    signal(SIGINT, SIGHandler);
 
-void readFiles(int fileCount, char *argv[]) {
-    signal(SIGALRM, SIGALRMHandler);
-    siginterrupt(SIGALRM, 1);
     int openedFiles = fileCount;
-    char buffer[BUFSIZ];
-    char tmpBuffer[BUFSIZ];
+    char buf[BUFSIZ];
 
+    char signame[5];
+    int timeout = 1;
     while (openedFiles) {
         for (int i = 0; i < fileCount; i++) {
             if (fd[i] == NULL) {
                 continue;
             }
+            if (read(fds[0], signame, 5) > 0) {
+                if (!memcmp("int", signame, 3)) {
+                    for (int j = 0; j < fileCount; ++j) {
+                        if (fd[j]) {
+                            fclose(fd[j]);
+                            openedFiles--;
+                        }
+                    }
+                    break;
+                }
+            }
 
-            alarm(TIME_OUT);
+            alarm(timeout);
 
-            if (fgets(buffer, BUFSIZ, fd[i]) == NULL && !alarmBeeped) {
+            char *ret = fgets(buf, BUFSIZ, fd[i]);
+
+            if (ret != NULL && !alarmed) {
+                write(1, buf, strlen(buf));
+            } else if (alarmed) {
+                alarmed = 0;
+                continue;
+            } else {
                 fclose(fd[i]);
                 fd[i] = NULL;
                 openedFiles--;
-            } else if (alarmBeeped) {
-                alarmBeeped = 0;
-                continue;
-            } else {
-                sprintf(tmpBuffer, "%s: %s", argv[i], buffer);
-                write(1, tmpBuffer, strlen(tmpBuffer));
-                memset(buffer, 0, BUFSIZ);
-                memset(tmpBuffer, 0, BUFSIZ);
             }
+
             alarm(0);
         }
     }
-    signal(SIGALRM, SIG_DFL);
 }
 
 int main(int argc, char *argv[]) {
@@ -71,13 +83,23 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    fd = (FILE **) malloc(argc * sizeof(FILE));
+    if (pipe(fds) == -1) {
+        perror("Error occurred while creating a pipe");
+        return -1;
+    }
+    fcntl(fds[0], F_SETFL, O_NONBLOCK);
+
+    FILE **fd = malloc(argc * sizeof(FILE));
     if (fd == NULL) {
         perror("Error occurred with malloc\n");
         return -1;
     }
-    int opened = openFiles(argc, argv);
-    readFiles(opened, argv);
-    
+
+    int opened = openFiles(argc, argv, fd);
+    if (opened) {
+        readFiles(opened, fd);
+    }
+
+    free(fd);
     return 0;
 }

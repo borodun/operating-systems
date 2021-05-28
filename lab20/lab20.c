@@ -4,9 +4,10 @@
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        printf("Usage: %s regular_expression", argv[0]);
-        return -1;
+        printf("Usage: %s regular_expression\n", argv[0]);
+        return 0;
     }
+
     char *template = argv[1];
     printf("template: %s\n", template);
 

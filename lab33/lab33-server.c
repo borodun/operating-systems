@@ -39,12 +39,12 @@ int readSocket(int sd, char *buf) {
 }
 
 int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s destination_port\n", argv[0]);
+    }
+
     struct sockaddr_in sockAddr;
     in_port_t destinationPort;
-
-    if (argc < 2) {
-        printf("Usage: %s destination_port", argv[0]);
-    }
     destinationPort = (in_port_t) atoi(argv[1]);
 
     memset(&sockAddr, 0, sizeof(struct sockaddr_in));

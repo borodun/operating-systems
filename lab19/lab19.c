@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: %s regular_expression", argv[0]);
+        printf("Usage: %s regular_expression\n", argv[0]);
         return -1;
     }
 
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     while ((p = readdir(dir)) != NULL) {
         size_t fileNameLength = strlen(p->d_name);
         int templateIdx = 0;
-        int fileNameIdx = 0;
+        int fileNameIdx;
         int match = 0;
 
         for (fileNameIdx = 0; (fileNameIdx < fileNameLength) && (templateIdx < templateLength); fileNameIdx++) {
@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
                     }
                     templateIdx++;
                 }
+
                 if (templateLength == templateIdx) {
                     match = 1;
                     break;
@@ -52,6 +53,7 @@ int main(int argc, char *argv[]) {
                     templateIdx++;
                     continue;
                 }
+
                 while (fileNameIdx < fileNameLength) {
                     if (template[templateIdx] == p->d_name[fileNameIdx]) {
                         break;
@@ -66,24 +68,29 @@ int main(int argc, char *argv[]) {
                 templateIdx++;
             }
         }
+
         if (fileNameLength == fileNameIdx) {
             while (templateIdx < templateLength) {
                 if ('*' != template[templateIdx])
                     break;
                 templateIdx++;
             }
+
             if (templateLength == templateIdx) {
                 match = 1;
             }
         }
+
         if (match) {
             printf("\t%s\n", p->d_name);
             matched++;
         }
     }
+
     if (!matched) {
         printf("No matching files for '%s'\n", template);
     }
+
     closedir(dir);
     return 0;
 }
