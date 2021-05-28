@@ -16,7 +16,7 @@ void SIGINTHandler(int signum) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main() {
     if (pipe(fds) == -1) {
         perror("Error occurred while creating a pipe");
         return -1;
@@ -38,14 +38,14 @@ int main(int argc, char *argv[]) {
 
     raw = orig;
     raw.c_lflag &= ~(ICANON | ECHO);
-    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VMIN] = 1;
     raw.c_cc[VTIME] = 0;
 
     tcsetattr(tty, TCSANOW, &raw);
 
     printf("\tType text(40 chars per line):"
            "\n\tBACKSPACE to erase char,"
-           "\n\tCTRL-U to erase line, "
+           "\n\tCTRL-U to erase line,"
            "\n\tCTRL-W to erase word"
            "\n\tCTRL-D to finish typing\n");
     char signame[5];
