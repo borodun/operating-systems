@@ -1,4 +1,4 @@
-###Compile
+### Compile
 ```
 $ gcc lab19.c -o lab19
 ```
